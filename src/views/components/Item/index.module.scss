@@ -1,17 +1,15 @@
-.inputTask {
+.item {
   display: grid;
   grid-template-columns: 1fr 50px 50px;
   margin-bottom: 15px;
-  background: #dbe2ef;
   border-radius: 5px;
   padding-right: 10px;
 
   &Label {
     display: grid;
-    grid-template-columns: auto 1fr;
+    grid-template-columns: 1fr;
     align-items: center;
-    padding: 12px 15px;
-    cursor: pointer;
+    padding: 7px 15px 15px;
   }
 
   &Checkbox {
@@ -23,14 +21,33 @@
   &Title {
     padding: 5px;
     line-height: 1.2;
+    font-size: 25px;
+    color: #3f72af;
+    font-weight: bolder;
+
+    &Sub {
+      padding: 5px;
+      font-size: 15px;
+
+      &Name {
+        color: #3f72af;
+        font-weight: bolder;
+      }
+
+      &Link {
+        text-decoration: none;
+        color: black;
+      }
+    }
   }
 
   &TitleEdit {
-    font: 1rem/1em "Roboto", "san-serif";
+    font-size: 25px;
     border: none;
     padding: 5px;
     background: none;
     box-shadow: 0 4px 0 -3px #3f72af;
+    outline: none;
   }
 
   &Edit,

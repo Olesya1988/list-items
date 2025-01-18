@@ -1,43 +1,56 @@
-import React from "react";
+import React, { useEffect } from "react";
 import styles from "./index.module.scss";
 import { useToDoStore } from "../../data/stores/useToDoStore";
-import { InputPlus } from "../components/InputPlus";
-import { InputTask } from "../components/InputTask";
+import { Item } from "../components/Item";
 
 export const App: React.FC = () => {
-  const [tasks, createTask, updateTask, removeTask] = useToDoStore((state) => [
-    state.tasks,
-    state.createTask,
-    state.updateTask,
-    state.removeTask,
-  ]);
+  const [items, loading, fetchItems, moreItems, updateItem, removeItem] =
+    useToDoStore((state) => [
+      state.items,
+      state.loading,
+      state.fetchItems,
+      state.moreItems,
+      state.updateItem,
+      state.removeItem,
+    ]);
 
-  console.log(tasks);
+  useEffect(() => {
+    fetchItems();
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  // скроллинг
+  const handleScroll = () => {
+    if (
+      window.innerHeight + document.documentElement.scrollTop !==
+      document.documentElement.offsetHeight
+    ) {
+      return;
+    }
+    moreItems();
+  };
 
   return (
     <article className={styles.article}>
-      <h1 className={styles.articleTitle}>To Do App</h1>
+      <h1 className={styles.articleTitle}>Repositories of JavaScript</h1>
+      <section className={styles.articleSection}></section>
       <section className={styles.articleSection}>
-        <InputPlus
-          onAdd={(title) => {
-            if (title) {
-              createTask(title);
-            }
-          }}
-        />
-      </section>
-      <section className={styles.articleSection}>
-        {!tasks.length && (
-          <p className={styles.articleText}>There is no one task</p>
-        )}
-        {tasks.map((task) => (
-          <InputTask
-            key={task.id}
-            id={task.id}
-            title={task.title}
-            onDone={removeTask}
-            onEdited={updateTask}
-            onRemoved={removeTask}
+        {loading && <p className={styles.articleText}>Loading...</p>}
+
+        {items.map((item) => (
+          <Item
+            key={item.id}
+            id={item.id}
+            owner={item.owner.login}
+            title={item.name}
+            url={item.url}
+            visibility={item.visibility}
+            watchers={item.watchers}
+            forks={item.forks}
+            size={item.size}
+            onEdited={updateItem}
+            onRemoved={removeItem}
           />
         ))}
       </section>

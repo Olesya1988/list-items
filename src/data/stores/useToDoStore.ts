@@ -1,81 +1,67 @@
-import create, { State, StateCreator } from "zustand";
-import { generateId } from "../helpers";
+import create from "zustand";
 import { devtools } from "zustand/middleware";
+import axios from "axios";
+import { ToDoStore } from "../interfaces.tsx";
 
-interface Task {
-  id: string;
-  title: string;
-  createAt: number;
-}
+// используем github api
+const URL =
+  "https://api.github.com/search/repositories?q=javascript&sort=stars&order=asc&page=";
 
-interface ToDoStore {
-  tasks: Task[];
-  createTask: (title: string) => void;
-  updateTask: (id: string, title: string) => void;
-  removeTask: (id: string) => void;
-}
-
-function isToDoStore(object: any): object is ToDoStore {
-  return "tasks" in object;
-}
-
-const localStorageUpdate =
-  <T extends State>(config: StateCreator<T>): StateCreator<T> =>
-  (set, get, api) =>
-    config(
-      (nextState, ...args) => {
-        if (isToDoStore(nextState)) {
-          window.localStorage.setItem("tasks", JSON.stringify(nextState.tasks));
-        }
-        set(nextState, ...args);
-      },
-      get,
-      api
-    );
-
-const getCurrentState = () => {
-  try {
-    const currentState = JSON.parse(
-      window.localStorage.getItem("tasks") || "[]"
-    ) as Task[];
-    return currentState;
-  } catch (err) {
-    window.localStorage.setItem("tasks", "[]");
-  }
-  return [];
-};
-
+// создаём store
 export const useToDoStore = create<ToDoStore>(
-  localStorageUpdate(
-    devtools((set, get) => ({
-      tasks: getCurrentState(),
-      createTask: (title: string) => {
-        const { tasks } = get();
-        const newTask = {
-          id: generateId(),
-          title,
-          createAt: Date.now(),
-        };
+  devtools((set, get) => ({
+    items: [], // массив элементов
+    loading: false, // статус загрузки
+    error: null, // ошибка
+    page: 1, // номер страницы - начинаем с первой
+    fetchItems: async () => {
+      // загрузка элементов первой страницы
+      set({ loading: true });
+      const { page } = get();
 
-        set({
-          tasks: [newTask].concat(tasks),
-        });
-      },
-      updateTask: (id: string, title: string) => {
-        const { tasks } = get();
-        set({
-          tasks: tasks.map((task) => ({
-            ...task,
-            title: task.id === id ? title : task.title,
-          })),
-        });
-      },
-      removeTask: (id: string) => {
-        const { tasks } = get();
-        set({
-          tasks: tasks.filter((task) => task.id !== id),
-        });
-      },
-    }))
-  )
+      try {
+        const response = await axios.get(`${URL}${page}`);
+
+        set({ items: response.data.items });
+      } catch (e: any) {
+        let error = e;
+        // custom error
+        if (e.status === 400) {
+          error = await e.json();
+        }
+        set({ error });
+      } finally {
+        set({ loading: false });
+      }
+    },
+    moreItems: async () => {
+      // дозагрузка элементов (вторая, третья и т.д. страницы)
+      const { items } = get();
+      const { page } = get();
+      set({ page: page + 1 });
+
+      const response = await axios.get(`${URL}${page + 1}`);
+
+      set({
+        items: items.concat(response.data.items),
+      });
+    },
+    updateItem: (id: number, name: string) => {
+      // редактирование заголовка выбранного элемента
+      const { items } = get();
+      set({
+        items: items.map((item) => ({
+          ...item,
+          name: item.id === id ? name : item.name,
+        })),
+      });
+    },
+    removeItem: (id: number) => {
+      // удаление выбранного элемента
+      const { items } = get();
+      set({
+        items: items.filter((item) => item.id !== id),
+      });
+    },
+  }))
 );
